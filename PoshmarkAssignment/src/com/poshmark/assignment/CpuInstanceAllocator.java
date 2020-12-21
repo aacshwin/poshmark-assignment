@@ -1,17 +1,29 @@
 package com.poshmark.assignment;
 
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * CpuInstanceAllocator contains the main logic for reading input as Server Model
+ * and calculating number of servers to be allocated. 
+ * 
+ * @author Aacshwin Ravichandran
+ * @version 1.0
+ * @since 2020-12-21
+ *
+ */
 public class CpuInstanceAllocator {
 
 	private static List<ServerModel> smList = new ArrayList<>();
 
+	/**
+	 * The main method CpuInstanceAllocator.
+	 * 
+	 * @param args
+	 */
 	public static void main(String[] args) {
 
 		ServerModel sm = new ServerModel("us-east", "large", 0.12F);
@@ -46,9 +58,10 @@ public class CpuInstanceAllocator {
 		smList.add(sm13);
 		smList.add(sm14);
 
+		// Sorting the input server instances based of cost per hour per CPU.
 		Collections.sort(smList);
-
-		List<ResultModel> rmList = get_cost(24, 500);
+		
+		List<ResultModel> rmList = get_cost(8, 100F);
 		Iterator<ResultModel> iter = rmList.iterator();
 
 		while (iter.hasNext()) {
@@ -57,32 +70,86 @@ public class CpuInstanceAllocator {
 
 	}
 
-	public static List<ResultModel> get_cost(int targetHours, int targetCpuCount) {
+	/**
+	 * This is a overloaded method for the get_cost method with hours and CPUs as
+	 * input.
+	 * 
+	 * @param hours This is the number of hours the user needs.
+	 * @param cpus  This is the minimum number of CPUs the user needs.
+	 * @return This method in turn calls the main get_cost method with 3 parameters.
+	 */
+	public static List<ResultModel> get_cost(int hours, int cpus) {
+		return get_cost(hours, cpus, 0F);
+	}
+
+	/**
+	 * This is a overloaded method for the get_cost method with hours and price as
+	 * input.
+	 * 
+	 * @param hours This is the number of hours the user needs.
+	 * @param price This is the maximum amount the user is willing to pay.
+	 * @return This method in turn calls the main get_cost method with 3 parameters.
+	 */
+	public static List<ResultModel> get_cost(int hours, Float price) {
+		return get_cost(hours, -1, price);
+	}
+
+	/**
+	 * This is the main get_cost method which accepts all the 3 user constraints.
+	 * 
+	 * @param hours This is the number of hours the user needs.
+	 * @param cpus  This is the minimum number of CPUs the user needs.
+	 * @param price This is the maximum amount the user is willing to pay.
+	 * @return This method returns the result model with total price and servers
+	 *         allocated across the regions.
+	 */
+	public static List<ResultModel> get_cost(int hours, int cpus, Float price) {
+		int serversAllotted = 0;
 		List<ResultModel> rmList = new ArrayList<>();
 		ResultModel rmEast = new ResultModel("us-east");
 		ResultModel rmWest = new ResultModel("us-west");
 		ResultModel rmAsia = new ResultModel("asia");
 		Iterator<ServerModel> iter = smList.iterator();
 
-		while (iter.hasNext() && targetCpuCount > 0) {
+		while (iter.hasNext()) {
 			ServerModel serverModel = iter.next();
-			int serversAllotted = targetCpuCount / serverModel.getNoOfCpu();
-			if(serversAllotted == 0) {
+
+			// If CPUs is set as 0, the target number of CPUs is achieved, thus the break out of the loop.
+			if (cpus == 0) {
+				break;
+			} else if (cpus == -1) {
+				// If CPUs is set as -1, the user had only specified hours and price as target.
+				// Thus servers allocations logic is optimized based on price
+				serversAllotted = (int) (price / (serverModel.getCostPerHour() * hours));
+			} else {
+				// If user had specified cpus target, servers allocations logic is optimized based on CPUs.
+				serversAllotted = cpus / serverModel.getNoOfCpu();
+			}
+
+			// If server allotted is 0 for current iteration, its okay to skip to next iteration.
+			if (serversAllotted == 0) {
 				continue;
 			}
 			switch (serverModel.getRegion()) {
 			case "us-east":
-				setResult(targetHours, serversAllotted, serverModel, rmEast);
+				setResult(hours, serversAllotted, serverModel, rmEast);
 				break;
 			case "us-west":
-				setResult(targetHours, serversAllotted, serverModel, rmWest);
+				setResult(hours, serversAllotted, serverModel, rmWest);
 				break;
 			case "asia":
-				setResult(targetHours, serversAllotted, serverModel, rmAsia);
+				setResult(hours, serversAllotted, serverModel, rmAsia);
 				break;
 			}
 
-			targetCpuCount = targetCpuCount % serverModel.getNoOfCpu();
+			if (cpus == -1) {
+				// Calculation for remaining target price for next iteration.
+				price = price % (serverModel.getCostPerHour() * hours);
+			} else {
+				// Calculation for remaining target CPUs for next iteration.
+				cpus = cpus % serverModel.getNoOfCpu();
+			}
+
 		}
 		rmList.add(rmAsia);
 		rmList.add(rmWest);
@@ -90,18 +157,27 @@ public class CpuInstanceAllocator {
 		return rmList;
 	}
 
-	public static void setResult(int targetHours, int serversAllotted, ServerModel sm, ResultModel rm) {
-		rm.setTotal_cost(sm.getCostPerHour() * targetHours * serversAllotted);
+	/**
+	 * This method contains the internal calculation logic for building the result model.
+	 * 
+	 * @param targetHours This is the number of hours the user needs.
+	 * @param serversAllotted This the number of instances of server allotted in the result model.
+	 * @param serverModel This is the model object for Input server instances.
+	 * @param resultModel This is the result model object.
+	 */
+	public static void setResult(int targetHours, int serversAllotted, ServerModel serverModel,
+			ResultModel resultModel) {
+		resultModel.setTotal_cost(serverModel.getCostPerHour() * targetHours * serversAllotted);
 
-		Map<String, Integer> servers = rm.getServers();
-		if (servers.containsKey(sm.getType())) {
-			int count = servers.get(sm.getType());
+		Map<String, Integer> servers = resultModel.getServers();
+		if (servers.containsKey(serverModel.getType())) {
+			int count = servers.get(serverModel.getType());
 			count += serversAllotted;
-			servers.put(sm.getType(), count);
+			servers.put(serverModel.getType(), count);
 		} else {
-			servers.put(sm.getType(), serversAllotted);
+			servers.put(serverModel.getType(), serversAllotted);
 		}
-		rm.setServers(servers);
+		resultModel.setServers(servers);
 	}
 
 }

@@ -3,6 +3,13 @@ package com.poshmark.assignment;
 import java.util.HashMap;
 import java.util.Map;
 
+/**
+ * Result Model is the resultant output allocated server instances model
+ * 
+ * @author Aacshwin Ravichandran
+ * @version 1.0
+ * @since 2020-12-21
+ */
 public class ResultModel {
 
 	private String region;

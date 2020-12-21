@@ -1,5 +1,12 @@
 package com.poshmark.assignment;
 
+/**
+ * Server Model is the input server instance model
+ * 
+ * @author Aacshwin Ravichandran
+ * @version 1.0
+ * @since 2020-12-21
+ */
 public class ServerModel implements Comparable<ServerModel> {
 
 	private String region;
@@ -16,6 +23,11 @@ public class ServerModel implements Comparable<ServerModel> {
 		calcCostPerCpu();
 	}
 
+	/**
+	 * This method is used to determine the number of CPUs in each server instance based on its type.
+	 * 
+	 * @return number of CPUs
+	 */
 	public int calcNoOfCpu() {
 		switch (this.type) {
 		case "large":
