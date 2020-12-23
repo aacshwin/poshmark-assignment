@@ -1,0 +1,4 @@
+module-info.class
+com/poshmark/assignment/ResultModel.class
+com/poshmark/assignment/CpuInstanceAllocator.class
+com/poshmark/assignment/ServerModel.class

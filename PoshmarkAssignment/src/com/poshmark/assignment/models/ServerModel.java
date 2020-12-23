@@ -1,4 +1,4 @@
-package com.poshmark.assignment;
+package com.poshmark.assignment.models;
 
 /**
  * Server Model is the input server instance model

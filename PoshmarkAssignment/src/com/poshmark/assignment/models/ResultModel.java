@@ -1,4 +1,4 @@
-package com.poshmark.assignment;
+package com.poshmark.assignment.models;
 
 import java.util.HashMap;
 import java.util.Map;
